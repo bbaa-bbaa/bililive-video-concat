@@ -149,7 +149,7 @@ class VideoConcat {
           });
           if (lastTimerId) clearTimeout(lastTimerId);
           lastTimerId = setTimeout(() => {
-            FfmpegInst.kill("SIGINT");
+            ffmpegInst.kill("SIGINT");
             resolve(Blackframes);
           }, 1000);
         }
