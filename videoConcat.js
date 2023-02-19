@@ -75,7 +75,7 @@ class VideoConcat {
     let VideoSlices = [];
     for (let VideoSlicePath of this.VideoSlices) {
       let Slice = new VideoSlice(VideoSlicePath);
-      console.log(`[videoConcat]正在初始化视频源:${Slice.path}`);
+      console.log(`[VideoConcat]正在初始化视频源:${Slice.path}`);
       await Slice.init();
       VideoSlices.push(Slice);
     }
@@ -87,7 +87,8 @@ class VideoConcat {
     let endTime = BigNumber(startTime).plus(duration);
     let ffprobeInst = (
       await runCommandAsync(
-        `ffprobe -v error -print_format json -read_intervals '${startTime.toString()}%${endTime.toString()}' -select_streams v:0 -show_frames -show_entries "frame=pts,pts_time,pict_type" '${this.VideoSlices[index].path
+        `ffprobe -v error -print_format json -read_intervals '${startTime.toString()}%${endTime.toString()}' -select_streams v:0 -show_frames -show_entries "frame=pts,pts_time,pict_type" '${
+          this.VideoSlices[index].path
         }'`
       )
     ).stdout;
@@ -113,7 +114,8 @@ class VideoConcat {
     } else {
       return (
         await runCommandAsync(
-          `ffmpeg -y -v error -ss ${time.toString()} -i '${this.VideoSlices[index].path
+          `ffmpeg -y -v error -ss ${time.toString()} -i '${
+            this.VideoSlices[index].path
           }' -frames:v 1 -update 1 -c:v png -f image2pipe -`,
           { maxBuffer: 5 * 1024 * 1024, encoding: "buffer" }
         )
@@ -122,7 +124,8 @@ class VideoConcat {
   }
   async searchFrameByImage(index, image, startTime) {
     let ffmpegInst = childProcess.spawn(
-      `ffmpeg -hide_banner ${startTime && !startTime.eq(0) ? `-ss ${startTime.toString()}` : ""} -i '${this.VideoSlices[index].path
+      `ffmpeg -hide_banner ${startTime && !startTime.eq(0) ? `-ss ${startTime.toString()}` : ""} -i '${
+        this.VideoSlices[index].path
       }' -i - -an -copyts -filter_complex "blend=difference,blackframe" -f null -`,
       { stdio: ["pipe", "ignore", "pipe"], shell: true }
     );
@@ -173,7 +176,8 @@ class VideoConcat {
   }
   async clipVideo(index, startTime, duration, dest) {
     let ffmpegInst = childProcess.spawn(
-      `ffmpeg ${startTime && !startTime.eq(0) ? `-ss ${startTime.toString()}` : ""} ${!duration && !duration.eq(0) ? `-t ${duration.toString()}` : ""
+      `ffmpeg ${startTime && !startTime.eq(0) ? `-ss ${startTime.toString()}` : ""} ${
+        !duration && !duration.eq(0) ? `-t ${duration.toString()}` : ""
       } -i '${this.VideoSlices[index].path}' -c copy '${dest}'`,
       { stdio: ["pipe", "ignore", "pipe"], shell: true }
     );
@@ -193,11 +197,11 @@ class VideoConcat {
     });
   }
   async tryToConcat(dest) {
-    console.log(`[videoConcat]正在尝试拼接视频文件(共${this.VideoSlices.length}个分片)`);
+    console.log(`[VideoConcat]正在尝试拼接视频文件(共${this.VideoSlices.length}个分片)`);
     for (let index = 0; index < this.VideoSlices.length - 1; index++) {
-      console.log(`[videoConcat]正在读取分片${index + 1}的首帧`);
+      console.log(`[VideoConcat]正在读取分片${index + 1}的首帧`);
       let FirstFrameNextSlice = await this.getExactFrame(index + 1, 0);
-      console.log(`[videoConcat]正在读取分片${index}的尾部搜索分片${index + 1}的首帧`);
+      console.log(`[VideoConcat]正在读取分片${index}的尾部搜索分片${index + 1}的首帧`);
       let SearchedFrames = await this.searchFrameByImage(
         index,
         FirstFrameNextSlice,
@@ -205,8 +209,8 @@ class VideoConcat {
       );
 
       if (!SearchedFrames.length) {
-        console.log(`[videoConcat]没有在分片${index}的尾部到搜索分片${index + 1}的首帧`);
-        console.log(`[videoConcat]拼接可能存在中断`);
+        console.log(`[VideoConcat]没有在分片${index}的尾部到搜索分片${index + 1}的首帧`);
+        console.log(`[VideoConcat]拼接可能存在中断`);
         continue;
       }
       console.log("[VideoConcat]搜索结果:");
@@ -226,7 +230,7 @@ class VideoConcat {
     let ffmpegConcatFile = `ffconcat version 1.0`;
     let DanmakuClipArgument = [];
     let start = new BigNumber(0);
-    console.log("[VideoConcat]正在生成Ffmeng Concat参数与弹幕拼接参数");
+    console.log("[VideoConcat]正在生成FFConcat参数与弹幕拼接参数");
     for (let VideoSlice of this.VideoSlices) {
       ffmpegConcatFile += `\nfile '${path.resolve(VideoSlice.path)}'`;
       ffmpegConcatFile += `\noutpoint ${VideoSlice.endTime.toString()}`;
@@ -258,11 +262,12 @@ class VideoConcat {
     console.log(`[VideoConcat]获取临时弹幕文件ASS存放位置: ` + TempFilename + ".ass");
     await new Promise(async r => {
       let ConvertInst = childProcess.spawn(
-        `./DanmakuFactory -r 1920x1080 -S 45 -d -1 -N 文泉驿微米黑 -O 200 -L 1 --displayarea 0.33 -B TRUE --showmsgbox FALSE -i xml ${TempFilename + ".xml"
-        } -o ${TempFilename + ".ass"}`,
+        `./DanmakuFactory -r 1920x1080 -S 45 -d -1 -N 文泉驿微米黑 -O 200 -L 1 --displayarea 0.33 -B TRUE --showmsgbox FALSE -i xml '${
+          TempFilename + ".xml"
+        }' -o '${TempFilename + ".ass"}'`,
         {
           shell: true,
-          stdio: ["pipe", process.stdout, process.stderr]
+          stdio: ["pipe", "ignore", "ignore"]
         }
       );
       ConvertInst.on("exit", () => {
@@ -272,12 +277,17 @@ class VideoConcat {
     });
     console.log(`[VideoConcat]弹幕文件处理完成`);
     console.log(`[VideoConcat]获得ffconcat文件列表:\n` + ffmpegConcatFile);
-    await fs.promises.writeFile(TempFilename + ".txt", ffmpegConcatFile)
+    await fs.promises.writeFile(TempFilename + ".txt", ffmpegConcatFile);
     console.log(`[VideoConcat]正在拼接文件 输出：${dest}`);
-    let HaveDanmaku=await fs.promises.stat(TempFilename + ".ass").then(()=>true).catch(()=>false)
+    let HaveDanmaku = await fs.promises
+      .stat(TempFilename + ".ass")
+      .then(() => true)
+      .catch(() => false);
     return new Promise(resolve => {
       let ffmpegInst = childProcess.spawn(
-        `ffmpeg -y -f concat -safe 0 -i ${TempFilename + ".txt"} ${HaveDanmaku ? `-i ${TempFilename + ".ass"}` : ""} -metadata:s:s:0 language=chi -c copy ${dest}`,
+        `ffmpeg -y -f concat -safe 0 -i '${TempFilename + ".txt"}' ${
+          HaveDanmaku ? `-i '${TempFilename + ".ass"}'` : ""
+        } -metadata:s:s:0 language=chi -c copy '${dest}'`,
         { stdio: ["pipe", "ignore", "pipe"], shell: true }
       );
       let readLineInst = readline.createInterface({
@@ -291,17 +301,13 @@ class VideoConcat {
       });
       ffmpegInst.on("exit", async () => {
         console.log("[VideoConcat]正在清理临时文件");
-        await fs.promises.unlink(TempFilename + ".xml").catch(()=>{})
-        await fs.promises.unlink(TempFilename + ".ass").catch(()=>{})
-        await fs.promises.unlink(TempFilename + ".txt").catch(()=>{})
+        await fs.promises.unlink(TempFilename + ".xml").catch(() => {});
+        await fs.promises.unlink(TempFilename + ".ass").catch(() => {});
+        await fs.promises.unlink(TempFilename + ".txt").catch(() => {});
         console.log("[VideoConcat]处理完成");
         resolve();
       });
     });
   }
 }
-(async function () {
-  let ConcatInst = new VideoConcat(fs.readdirSync(".").filter(a=>/flv$/.test(a)));
-  await ConcatInst.init();
-  await ConcatInst.tryToConcat("a.mkv");
-})();
+module.exports = VideoConcat;

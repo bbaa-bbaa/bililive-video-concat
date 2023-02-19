@@ -83,7 +83,7 @@ func main() {
 	// FileName StartTime Duration
 	ArgCount := len(os.Args)
 	fileCount := (len(os.Args) - 1) / 3
-	if fileCount < 2 {
+	if fileCount < 1 {
 		os.Exit(1)
 	}
 	fmt.Fprintf(os.Stderr, "[DanmakuConcat]需要拼接%d个弹幕文件\n", fileCount)
