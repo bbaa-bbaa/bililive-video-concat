@@ -211,6 +211,7 @@ class VideoConcat {
       if (!SearchedFrames.length) {
         console.log(`[VideoConcat]没有在分片${index}的尾部到搜索分片${index + 1}的首帧`);
         console.log(`[VideoConcat]拼接可能存在中断`);
+        this.VideoSlices[index].interruption = true;
         continue;
       }
       console.log("[VideoConcat]搜索结果:");
@@ -250,8 +251,9 @@ class VideoConcat {
     let fd = await fsOpenfile(TempFilename + ".xml", "w");
     await new Promise(async r => {
       let ConcatInst = childProcess.spawn(`./bilibiliDanmakuConcat`, DanmakuClipArgument, {
-        stdio: ["pipe", fd, process.stdout]
+        stdio: ["pipe", fd, "pipe"]
       });
+      ConcatInst.stderr.on("data", a => process.stdout.write(a));
       ConcatInst.on("exit", () => {
         fs.close(fd, () => {
           r();
@@ -276,6 +278,20 @@ class VideoConcat {
       ConvertInst.stdin.end("\nY\n");
     });
     console.log(`[VideoConcat]弹幕文件处理完成`);
+    let timeStart = new BigNumber(0);
+    for (let [index, VideoSlice] of this.VideoSlices.slice(0, -1).entries()) {
+      timeStart = timeStart.plus(VideoSlice.endTime);
+      console.log(
+        `[VideoConcat]视频断点${index + 1}: Time:${timeStart.toString()} AltTime:${timeStart
+          .dividedToIntegerBy(3600)
+          .toString()
+          .padStart(2, "0")}:${timeStart
+          .dividedToIntegerBy(60)
+          .mod(60)
+          .toString()
+          .padStart(2, "0")}:${timeStart.mod(60).toFixed(3).padStart(6,"0")}`
+      );
+    }
     console.log(`[VideoConcat]获得ffconcat文件列表:\n` + ffmpegConcatFile);
     await fs.promises.writeFile(TempFilename + ".txt", ffmpegConcatFile);
     console.log(`[VideoConcat]正在拼接文件 输出：${dest}`);
