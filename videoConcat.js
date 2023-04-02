@@ -225,8 +225,8 @@ class VideoConcat {
         console.log(`[VideoConcat]正在搜索最接近的${VideoConcat.safeSplitFrameType.join("/")}帧`);
         ChooseFrame = await this.getClosestFrameTime(index, ChooseFrame.time, VideoConcat.safeSplitFrameType);
       }
-      console.log(`[VideoConcat]确定分片${index}出点:${ChooseFrame.time.toString()}`);
-      this.VideoSlices[index].endTime = ChooseFrame.time;
+      this.VideoSlices[index].endTime = ChooseFrame?.time || BigNumber(ChooseFrame.pts_time);
+      console.log(`[VideoConcat]确定分片${index}出点:${this.VideoSlices[index].endTime.toString()}`);
     }
     let ffmpegConcatFile = `ffconcat version 1.0`;
     let DanmakuClipArgument = [];
